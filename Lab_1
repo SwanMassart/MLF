@@ -1,0 +1,121 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 11 09:32:23 2025
+
+@author: Swan
+"""
+
+import random
+
+
+def printpattern():
+    variable = "X"
+    stock = []
+    for i in range(9):
+        stock.append(variable)
+        variable += "X"
+        if i < 5:
+            print(stock[i])
+        else:
+            print(stock[8-i])
+
+
+printpattern()
+
+
+def sum(tab):
+    total = 0
+    for char in tab:
+        if char.isdigit():
+            total += int(char)
+    return total
+
+
+input_str = "n45as29@#8ss6"
+
+
+print(sum(input_str))
+
+
+def binaire(nombre):
+    tab = []
+    tabstring = ""
+    tabfinal = []
+    reste = 0
+    quotient = nombre
+    while quotient > 1:
+        reste = quotient % 2
+        tab.append(reste)
+        quotient = quotient//2
+    tab.append(quotient)
+
+    for i in range(len(tab)):
+        tabfinal.append(tab.pop())
+        tabstring += str(tabfinal[i])
+    print(tabfinal)
+    print(tabstring)
+    return tabstring
+
+
+binaire(22)
+
+
+def fibonacci(n):
+    if n == 0:
+        return [0]
+    if n == 1:
+        return [0, 1]
+    else:
+        tab = []
+        tab = fibonacci(n-1)
+        tab.append(fibonacci(n-1)[n-1]+fibonacci(n-2)[n-2])
+        return tab
+
+
+print(fibonacci(1))
+print(fibonacci(8))
+
+
+def fibolimit(n):
+    i = 0
+    while n > fibonacci(i).pop():
+        i += 1
+    print(fibonacci(i-1))
+
+
+fibolimit(16)
+
+
+def rock_paper_scissors():
+       choices = ["rock", "paper", "scissors"]
+
+       user_choice = input("Enter rock, paper, or scissors").lower()
+
+       if user_choice not in choices:
+
+           print("Invalid choice")
+           return
+       computer_choice = random.choice(choices)
+
+       print(f"You chose: {user_choice}")
+       print(f"Computer chose: {computer_choice}")
+
+       if user_choice == computer_choice:
+            print("It's a tie!")
+
+       elif (
+               (user_choice == "rock" and computer_choice == "scissors") or
+               (user_choice == "paper" and computer_choice == "rock") or
+               (user_choice == "scissors" and computer_choice == "paper")
+    ):
+        print("You win!")
+       else:
+        print("You lose!")
+
+
+rock_paper_scissors()  
+        
+        
+        
+        
+        
