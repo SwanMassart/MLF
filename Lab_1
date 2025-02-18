@@ -108,9 +108,9 @@ def rock_paper_scissors():
                (user_choice == "paper" and computer_choice == "rock") or
                (user_choice == "scissors" and computer_choice == "paper")
     ):
-        print("You win!")
+        print("win!")
        else:
-        print("You lose!")
+        print("lose!")
 
 
 rock_paper_scissors()  
