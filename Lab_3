@@ -1,1 +1,178 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 18 09:19:19 2025
+
+@author: Swan
+"""
+
+
+from sklearn.datasets import load_iris
+
+iris = load_iris()
+iris.feature_names
+print(iris.feature_names)
+print(iris.data[0:5, :])
+print(iris.target[0:5])
+#print(iris.data)
+
+
+print("\n")
+#Split data into training and testing parts:
+
+from sklearn.model_selection import train_test_split
+X=iris.data
+y=iris.target
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+print(X_train.shape)
+print(X_test.shape)
+
+#Use a Support Vector Machine for classification:
+
+from sklearn.svm import SVC
+SVMmodel=SVC(kernel='linear')
+SVMmodel.fit(X_train,y_train)
+SVMmodel.get_params()
+SVMmodel.score(X_test,y_test)
+print("\n")
+print(SVMmodel.score(X_test,y_test))
+
+X=iris.data[:,0:2]
+X.shape
+
+
+#Plot scatterplots of targets 0 and 1 and check the separability of the classes:
+import matplotlib.pyplot as plt 
+plt.scatter(X[y==0,0],X[y==0,1],color='blue')
+plt.scatter(X[y==1,0],X[y==1,1],color='red')
+plt.scatter(X[y==2,0],X[y==2,1],color='orange')
+plt.show()
+
+plt.figure()
+
+#Train and test the SVM classifier, play with regularization parameter C (either use the default value or try e.g. 200)
+X=iris.data[iris.target!=2,0:2]
+X.shape
+y=iris.target[iris.target!=2]
+SVModel_1=SVC(kernel='linear')
+
+X_train_1,X_test_1,y_train_1,y_test_1= train_test_split(X,y,test_size=0.2)
+
+SVModel_1.fit(X_train_1,y_train_1)
+SVModel_1.score(X_test_1,y_test_1)
+
+
+
+
+print("\n")
+import numpy as np
+supvectors=SVModel_1.support_vectors_
+
+
+W=SVModel_1.coef_[0]
+b=SVModel_1.intercept_[0]
+print(W)
+
+
+
+
+
+# Créer une grille de points pour visualiser la frontière de décision
+x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
+y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
+xx = np.linspace(x_min, x_max, 100)
+
+
+"""
+x1=np.linspace(np.min(X[:,0]),np.max(X[:,0]),100)
+x2=-b/W[0,1]-W[0,1]*x1
+
+"""
+
+
+# Calculer la ligne de séparation : w0*x + w1*y + b = 0 → y = (-w0/w1)x - b/w1
+yy = (-W[0] / W[1]) * xx - (b / W[1])
+
+
+
+
+plt.scatter(SVModel_1.support_vectors_[:, 0], SVModel_1.support_vectors_[:, 1], 
+            s=100, edgecolors='black', facecolors='none', label="Support Vectors")
+
+
+
+# Tracer la ligne de séparation
+plt.plot(xx, yy, 'k-', label="Frontière")
+
+
+
+
+#Show support vectors in the 2D plot, plot the decision line from equation [w0 w1]*[x0 x1] + b = 0:
+print("\n")
+plt.scatter(X[y==0,0],X[y==0,1],color='blue')
+plt.scatter(X[y==1,0],X[y==1,1],color='red')
+plt.xlabel(iris.feature_names[0])
+plt.ylabel(iris.feature_names[1])
+plt.legend()
+plt.title("Séparation des classes")
+plt.show()
+plt.figure()
+
+
+
+
+#Anomaly detection via SVM
+
+
+from sklearn.svm import OneClassSVM
+from sklearn.datasets import make_blobs
+from numpy import quantile,where,random
+
+random.seed(11)
+x,_ = make_blobs(n_samples=300, centers=1, cluster_std=.3, center_box=(4,4))
+
+plt.scatter(x[:,0], x[:,1])
+plt.show()
+
+
+
+#Train one-class SVM and plot the outliers (outputs of prediction being equal to -1)
+
+SVMmodelOne= OneClassSVM(kernel="rbf",gamma=0.001, nu=0.03)
+SVMmodelOne.fit(x)
+pred= SVMmodelOne.predict(x)
+
+anom_index= where(pred==-1)
+values = x[anom_index]
+
+plt.scatter(x[:,0],x[:,1])
+plt.scatter(values[:,0],values[:,1], color='red')
+plt.axis('equal')
+plt.show()
+plt.figure()
+
+
+
+
+
+
+#SCORE
+
+scores = SVMmodelOne.score_samples(x)
+
+thresh = quantile(scores, 0.01)
+print(thresh)
+index = where(scores<=thresh)
+values = x[index]
+print("\n")
+print("Score")
+print(scores)
+plt.scatter(x[:,0], x[:,1])
+plt.scatter(values[:,0], values[:,1], color='red')
+plt.axis('equal')
+plt.show()
+
+
+
+
+
 
