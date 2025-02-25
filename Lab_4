@@ -1,0 +1,391 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 25 09:00:05 2025
+
+@author: Swan
+"""
+from sklearn.datasets import load_iris
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn import decomposition
+
+# Defined 3 points in 2D-space:
+X=np.array([[2, 1, 0],[4, 3, 0]])
+# Calculate the covariance matrix:
+X_mean = np.mean(X, axis=1, keepdims=True)  # Moyenne de chaque variable
+X_centered = X - X_mean  # Centrer les donnée
+R = np.cov(X_centered)
+"""
+R=np.matmul(X,X.T)/3
+"""
+
+# Calculate the SVD decomposition and new basis vectors:
+[U,D,V]=np.linalg.svd(R)  # call SVD decomposition
+u1=U[:,0] # new basis vectors
+u2=U[:,1]
+
+# Calculate the coordinates in new orthonormal basis:
+X_pca = np.dot(U.T, X_centered)
+""" 
+Xi1= np.matmul(np.transpose(X),u1)
+Xi2= np.matmul(np.transpose(X),u2)
+"""
+
+
+# Calculate the approximation of the original from new basis
+X_reconstructed = np.dot(U, X_pca) + X_mean
+"""
+Xaprox=np.matmul(u1[:, None],Xi1[None,:])
+"""
+
+
+#print(Xi1[:,None]) # add second dimention to array and test it
+print("Données originales :\n", X)
+print("Données reconstruites après PCA :\n", X_reconstructed)
+print("Vecteur principal 1 : ", u1)
+print("Vecteur principal 2 : ", u2)
+
+# Check that you got the original
+"""Match with a 10E-16 error"""
+
+#Plot
+"""import matplotlib.pyplot as plt
+
+# Affichage des données originales
+plt.figure(figsize=(8,6))
+plt.scatter(X[0, :], X[1, :], color='red', label='Données originales')
+
+# Ajout des vecteurs propres comme axes
+origin = np.zeros(2)
+plt.quiver(*origin, *u1, color='blue', scale=2, label="Axe principal 1")
+plt.quiver(*origin, *u2, color='green', scale=2, label="Axe principal 2")
+
+plt.xlabel("Axe X")
+plt.ylabel("Axe Y")
+plt.axhline(0, color='black', linestyle='--', linewidth=0.5)
+plt.axvline(0, color='black', linestyle='--', linewidth=0.5)
+plt.legend()
+plt.title("Vecteurs propres et données originales")
+plt.grid()
+plt.show()
+
+"""
+# Load Iris dataset as in the last PC lab:
+
+iris=load_iris()
+iris.feature_names
+print(iris.feature_names)
+print(iris.data[0:5,:])
+print(iris.target[:])
+
+# We have 4 dimensions of data, plot the first three colums in 3D
+X=iris.data
+y=iris.target
+
+axes1=plt.axes(projection='3d')
+axes1.scatter3D(X[y==0,0],X[y==0,1],X[y==0,2],color='green')
+axes1.scatter3D(X[y==1,0],X[y==1,1],X[y==1,2],color='blue')
+axes1.scatter3D(X[y==2,0],X[y==2,1],X[y==2,2],color='magenta')
+plt.show()
+plt.figure()
+
+
+
+
+
+
+
+# Pre-processing is an important step, you can try either StandardScaler (zero mean, unit variance of features)
+# or MinMaxScaler (to interval from 0 to 1)
+from sklearn import preprocessing
+from sklearn.preprocessing import StandardScaler
+"""
+from sklearn.preprocessing import MinMaxScaler
+"""
+
+Xscaler = StandardScaler()
+"""
+Xscaler = MinMaxScaler()
+"""
+
+Xpp=Xscaler.fit_transform(X)
+
+
+"""
+axes1=plt.axes(projection='3d')
+axes1.scatter3D(X[y==0,1],X[y==0,1],X[y==0,2],color='green')
+axes1.scatter3D(X[y==1,1],X[y==1,1],X[y==1,2],color='blue')
+axes1.scatter3D(X[y==2,1],X[y==2,1],X[y==2,2],color='magenta')
+plt.show
+"""
+
+# define PCA object (three components), fit and transform the data
+pca = decomposition.PCA(n_components=3)
+pca.fit(Xpp)
+Xpca = pca.transform(Xpp)
+print(pca.get_covariance())
+# you can plot the transformed feature space in 3D:
+axes2=plt.axes(projection='3d')
+axes2.scatter3D(Xpca[y==0,0],Xpca[y==0,1],Xpca[y==0,2],color='green')
+axes2.scatter3D(Xpca[y==1,0],Xpca[y==1,1],Xpca[y==1,2],color='blue')
+axes2.scatter3D(Xpca[y==2,0],Xpca[y==2,1],Xpca[y==2,2],color='magenta')
+plt.show()
+plt.figure()
+
+
+
+# Compute pca.explained_variance_ and pca.explained_cariance_ratio_values
+pca.explained_variance_
+print(pca.explained_variance_)
+
+pca.explained_variance_ratio_
+print(pca.explained_variance_ratio_)
+
+# Plot the principal components in 2D, mark different targets in color
+
+plt.scatter(Xpca[y==0,0],Xpca[y==0,1],color='green')
+plt.scatter(Xpca[y==1,0],Xpca[y==1,1],color='blue')
+plt.scatter(Xpca[y==2,0],Xpca[y==2,1],color='magenta')
+plt.show()
+
+
+# Import train_test_split as in last PC lab, split X (original) into train and test, train KNN classifier on full 4-dimensional X
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train, y_test = train_test_split(Xpp,y,test_size=0.3)
+print(X_train.shape)
+print(X_test.shape)
+knn1=KNeighborsClassifier(n_neighbors = 3)
+knn1.fit(X_train,y_train)
+Ypred=knn1.predict(X_test)
+
+
+# Import and show confusion matrix
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
+print(confusion_matrix(y_test,Ypred))
+accuracy = np.trace(confusion_matrix(y_test,Ypred)) / np.sum(confusion_matrix(y_test,Ypred))
+print(f"\n Précision du modèle k-NN without PCA : {accuracy}")
+ConfusionMatrixDisplay.from_predictions(y_test,Ypred)
+
+# Now do the same (data set split, KNN, confusion matrix), but for PCA-transformed data (1st two principal components, i.e., first two columns). 
+# Compare the results with full dataset
+
+
+"""
+PCA PCA PCA PCA PCA  PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA
+"""
+
+"""
+loading the data
+"""
+
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+"""
+standardisation of the data
+"""
+
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+"""
+reductiion to 2 components
+"""
+
+pca_2d = PCA(n_components=2)
+X_pca_2d = pca_2d.fit_transform(X_scaled)
+
+"""
+Split the dataset
+"""
+
+X_train_pca, X_test_pca, y_train, y_test = train_test_split(X_pca_2d, y, test_size=0.3, random_state=42)
+
+"""
+training
+"""
+
+knn_pca = KNeighborsClassifier(n_neighbors=3)
+knn_pca.fit(X_train_pca, y_train)
+y_pred_pca = knn_pca.predict(X_test_pca)
+
+"""
+Confusion matrix
+"""
+
+
+cm_pca = confusion_matrix(y_test, y_pred_pca)
+print("\nMatrice de confusion pour k-NN sur données PCA :\n", cm_pca)
+
+disp_pca = ConfusionMatrixDisplay(confusion_matrix=cm_pca, display_labels=iris.target_names)
+disp_pca.plot(cmap='Blues')
+plt.title("Matrice de confusion (k-NN sur PCA)")
+plt.show()
+
+"""
+accuracy
+"""
+
+
+accuracy_pca = np.trace(cm_pca) / np.sum(cm_pca)
+print(f"\n Précision du modèle k-NN avec PCA : {accuracy_pca}")
+
+
+
+"""
+
+
+PCA PCA PCA PCA PCA  PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA
+TWO COMPONENTS FIRST
+
+"""
+
+
+"""
+loading the data
+"""
+
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+"""
+standardisation of the data
+"""
+
+X_original_2D = X_scaled[:, :2]
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+X_original_2D = X_scaled[:, :2]
+
+
+"""
+reduction to 1 components
+"""
+
+pca_2d = PCA(n_components=1)
+X_pca_2d = pca_2d.fit_transform(X_original_2D)
+
+"""
+Split the dataset
+"""
+
+X_train_pca, X_test_pca, y_train, y_test = train_test_split(X_pca_2d, y, test_size=0.3, random_state=42)
+
+"""
+training
+"""
+
+knn_pca = KNeighborsClassifier(n_neighbors=3)
+knn_pca.fit(X_train_pca, y_train)
+y_pred_pca = knn_pca.predict(X_test_pca)
+
+"""
+Confusion matrix
+"""
+
+
+cm_pca = confusion_matrix(y_test, y_pred_pca)
+print("\nMatrice de confusion pour k-NN sur données PCA :\n", cm_pca)
+
+disp_pca = ConfusionMatrixDisplay(confusion_matrix=cm_pca, display_labels=iris.target_names)
+disp_pca.plot(cmap='Blues')
+plt.title("Matrice de confusion (k-NN sur PCA)")
+plt.show()
+
+"""
+accuracy
+"""
+
+
+accuracy_pca = np.trace(cm_pca) / np.sum(cm_pca)
+print(f"\n Précision du modèle k-NN avec PCA : {accuracy_pca}")
+
+"""
+accuracy much lower than with 2 or 3 components around 60% versus 95%
+"""
+
+"""
+
+
+PCA PCA PCA PCA PCA  PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA PCA
+TWO COMPONENTS, 2nd and 3rd
+
+"""
+
+
+"""
+loading the data
+"""
+
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+"""
+standardisation of the data
+"""
+
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+X_original_2D = X_scaled[:, [1, 2]]
+
+
+"""
+reduction to 1 components
+"""
+
+pca_2d = PCA(n_components=1)
+X_pca_2d = pca_2d.fit_transform(X_original_2D)
+
+"""
+Split the dataset
+"""
+
+X_train_pca, X_test_pca, y_train, y_test = train_test_split(X_pca_2d, y, test_size=0.3, random_state=42)
+
+"""
+training
+"""
+
+knn_pca = KNeighborsClassifier(n_neighbors=3)
+knn_pca.fit(X_train_pca, y_train)
+y_pred_pca = knn_pca.predict(X_test_pca)
+
+"""
+Confusion matrix
+"""
+
+
+cm_pca = confusion_matrix(y_test, y_pred_pca)
+print("\nMatrice de confusion pour k-NN sur données PCA :\n", cm_pca)
+
+disp_pca = ConfusionMatrixDisplay(confusion_matrix=cm_pca, display_labels=iris.target_names)
+disp_pca.plot(cmap='Blues')
+plt.title("Matrice de confusion (k-NN sur PCA)")
+plt.show()
+
+"""
+accuracy
+"""
+
+
+accuracy_pca = np.trace(cm_pca) / np.sum(cm_pca)
+print(f"\n Précision du modèle k-NN avec PCA : {accuracy_pca}")
+
+"""
+accuracy much lower than with 2 or 3 components around 75% versus 95%
+"""
+
+
+
+
+
+
