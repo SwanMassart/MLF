@@ -32,7 +32,12 @@ loss, accuracy = model.evaluate(X, y, verbose=0)
 
 
 
+
+
+
+
 """
+
 
 #  Expérimentation
 
@@ -96,3 +101,145 @@ plt.plot(history.history['loss'])
 plt.xlabel('n epochs')
 plt.ylabel('loss')
 """
+
+
+
+
+
+
+
+#Exercise 2 - Congressional Voting Data
+
+
+
+
+
+
+
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar 11 09:54:18 2025
+
+@author: Swan
+"""
+
+import pandas as pd
+import numpy as np
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+
+path_to_dataset = 'voting_complete.csv' 
+pd_dataset = pd.read_csv(path_to_dataset)
+
+print(pd_dataset.head())
+
+
+
+
+
+def custom_train_test_split(pd_data: pd.DataFrame, test_ratio: float = 0.2) -> tuple:
+    pd_dataset = pd_data.copy()
+    index = np.arange(len(pd_dataset))
+    np.random.shuffle(index)
+
+    train_amount = int(len(index) * (1 - test_ratio))
+    train_ids, test_ids = index[:train_amount], index[train_amount:]
+
+    train_dataset = pd_dataset.iloc[train_ids].reset_index(drop=True)
+    test_dataset = pd_dataset.iloc[test_ids].reset_index(drop=True)
+
+    X_train, y_train = train_dataset.iloc[:, 1:], train_dataset.iloc[:, 0]
+    X_test, y_test = test_dataset.iloc[:, 1:], test_dataset.iloc[:, 0]
+
+    return X_train, y_train, X_test, y_test
+
+
+x_train, y_train, x_test, y_test = custom_train_test_split(pd_dataset)
+
+
+x_train.replace({'y': 1, 'n': 0, '?': np.nan}, inplace=True)
+x_test.replace({'y': 1, 'n': 0, '?': np.nan}, inplace=True)
+
+
+x_train.fillna(x_train.mode().iloc[0], inplace=True)
+x_test.fillna(x_test.mode().iloc[0], inplace=True)
+
+
+x_train = pd.get_dummies(x_train, dtype=int)
+x_test = pd.get_dummies(x_test, dtype=int)
+
+
+x_test = x_test.reindex(columns=x_train.columns, fill_value=0)
+
+
+y_train = y_train.replace({'Republican': 0, 'Democrat': 1})
+y_test = y_test.replace({'Republican': 0, 'Democrat': 1})
+
+
+model = Sequential()
+model.add(Dense(32, input_shape=(x_train.shape[1],), activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
+
+model.summary()
+
+
+
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)  # Réduction du learning rate
+
+model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+
+
+X_train, X_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
+
+
+
+
+history = model.fit(X_train, y_train,
+                    epochs=40,
+                    batch_size=8,  # Augmentation du batch_size pour plus de stabilité
+                    verbose=1,
+                    validation_data=(X_val, y_val))
+
+# Évaluation du modèle
+loss, accuracy = model.evaluate(x_test, y_test, verbose=0)
+print(f'Model Accuracy: {accuracy * 100:.2f}%')
+
+
+
+
+
+if 'loss' in history.history and 'val_loss' in history.history:
+    # Création de la figure pour la perte
+    plt.figure(figsize=(10, 5))
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title('Training and Validation Loss')
+    plt.grid(True)
+    plt.show()
+else:
+    print("Erreur ")
+
+if 'accuracy' in history.history and 'val_accuracy' in history.history:
+    # Création de la figure pour l'accuracy
+    plt.figure(figsize=(10, 5))
+    plt.plot(history.history['accuracy'], label='Training Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.title('Training and Validation Accuracy')
+    plt.grid(True)
+    plt.show()
+else:
+    print("Erreur ")
+
+
+
+
