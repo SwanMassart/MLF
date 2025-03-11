@@ -27,6 +27,63 @@ history = model.fit(X, y, epochs=1000, batch_size=1, verbose=0)
 
 
 loss, accuracy = model.evaluate(X, y, verbose=0)
+
+
+
+
+
+"""
+
+#  Expérimentation
+
+X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float32)
+y = np.array([[0], [1], [1], [0]], dtype=np.float32)
+
+
+epochs_list = [200, 1000, 5000]  # Nombre d'époques
+learning_rates = [0.01, 0.1, 0.5]  # Taux d'apprentissage
+activation_functions = ['sigmoid', 'relu', 'tanh']  # Activation
+batch_sizes = [1, 4, 6]  # Batch size
+num_neurons_list = [2, 4, 8]  # Nombre de neurones dans la couche cachée
+verbose_mode = 0  # (0 = silencieux, 1 = affichage détaillé)
+
+
+for epochs in epochs_list:
+    for lr in learning_rates:
+        for activation in activation_functions:
+            for batch_size in batch_sizes:
+                for num_neurons in num_neurons_list:
+
+                    # Création du modèle
+                    model = Sequential([
+                        Input(shape=(2,)),  
+                        Dense(num_neurons, activation=activation),
+                        Dense(1, activation='sigmoid')
+                    ])
+
+                    # Compilation avec l'optimiseur Adam
+                    optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
+                    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+
+                    # Entraînement
+                    history = model.fit(X, y, epochs=epochs, batch_size=batch_size, verbose=verbose_mode)
+
+                    # Évaluation finale
+                    loss, accuracy = model.evaluate(X, y, verbose=0)
+
+                    # Résultats
+                    print(f"\n Configuration testée :")
+                    print(f"   Epochs: {epochs} |  Learning Rate: {lr} |  Activation: {activation}")
+                    print(f"   Batch Size: {batch_size} |  Neurons: {num_neurons}")
+                    print(f"  Final Accuracy: {accuracy * 100:.2f}%")
+
+                    #  Affichage de la courbe de perte
+                    plt.figure()
+                    plt.plot(history.history['loss'])
+                    plt.xlabel('Epochs')
+                    plt.ylabel('Loss')
+                    plt.title(f'Loss (Epochs={epochs}, LR={lr}, Act={activation}, Batch={batch_size}, Neurons={num_neurons})')
+                    plt.show()
 print('Accuracy: {:.2f}'.format(accuracy*100))
 
 for id_x, data_sample in enumerate(X):
@@ -38,3 +95,4 @@ plt.figure()
 plt.plot(history.history['loss'])
 plt.xlabel('n epochs')
 plt.ylabel('loss')
+"""
