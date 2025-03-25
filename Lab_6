@@ -8,7 +8,7 @@ Created on Tue Mar 18 09:04:44 2025
 from keras.models import Sequential
 from keras.layers import Dense, Flatten
 from keras.optimizers import SGD
-
+from keras.layers import Conv2D, MaxPooling2D
 from keras.optimizers import Adam
 from keras.datasets import cifar10
 from keras.utils import to_categorical
@@ -82,18 +82,23 @@ y_train_encoded = to_categorical(y_train, num_classes=10)
 #MODEL
 ############################################################################################################################
 model = Sequential()
+
+
+model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+model.add(MaxPooling2D((2, 2)))
+
 model.add(Flatten(input_shape=(32, 32, 3)))
-model.add(Dense(512, activation='relu', kernel_regularizer=l2(0.001)))
-model.add(Dropout(0.3))
+
+
 model.add(Dense(256, activation='relu', kernel_regularizer=l2(0.001)))
-model.add(Dropout(0.3))
+model.add(Dropout(0.25))
 model.add(Dense(128, activation='relu', kernel_regularizer=l2(0.001)))  # Nouvelle couche
-model.add(Dropout(0.3))
+model.add(Dropout(0.4))
 model.add(Dense(10, activation='softmax'))
 model.summary()
 
 
-optimizer = SGD(learning_rate = 0.02)
+optimizer = SGD(learning_rate = 0.05)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
 
@@ -175,7 +180,10 @@ show_the_best_predictions(model, X_test, y_test)
 
 """I experimented with various optimizations to improve our CIFAR-10 classification model.
  Initially, our simple dense network with SGD (lr=0.01) reached around 10% test accuracy. 
- I then increased model complexity by adding more layers (512 → 256 → 128) and Dropout (0.3), which improved stability but only slightly boosted accuracy to 51.7%.
+ I then increased model complexity by adding more layers (256 → 128) and Dropout (0.3), which improved stability but only slightly boosted accuracy to 51.7%.
  Implementing learning rate scheduling (ReduceLROnPlateau) helped the model adapt better, reducing loss fluctuations. Testing different batch sizes (64 vs. 256) showed that 64 worked best for generalization. 
   However, Batch Normalization did not improve performance, so we removed it. With these optimizations, I reached 53% test accuracy. 
-  To push beyond 55%, I tried experiment with Adam optimizer,but it decreased training epochs performances"""
+  To push beyond 55%, I tried experiment with Adam optimizer,but it decreased training epochs performances
+  Then I implemented a new layer with Conv2D and Maxpooling, the performances were much higher than 65%, however 
+  the training did need the 40 epochs so I reduced the number of epochs to 20.
+  LAST RESULTS 66% accuracy"""
