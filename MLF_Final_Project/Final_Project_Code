@@ -1,0 +1,137 @@
+# -*- coding: utf-8 -*-
+"""
+Kaggle – CNN simple pour la détection de fausse station
+@author: Swan
+"""
+import os, glob, numpy as np, pandas as pd, matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import (Conv2D, MaxPool2D, GlobalAveragePooling2D,
+                                     Dropout, BatchNormalization, Dense)
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from tensorflow.keras import callbacks
+from sklearn.utils.class_weight import compute_class_weight
+
+# ------------------------------------------------------------------
+# 1.  Chemins
+# ------------------------------------------------------------------
+DATA_DIR   = "/kaggle/input/data-set"
+TRAIN_DIR  = os.path.join(DATA_DIR, "Train")
+TEST_DIR   = os.path.join(DATA_DIR, "Test")
+LABELS_CSV = os.path.join(DATA_DIR, "label_train.csv")
+
+# ------------------------------------------------------------------
+# 2.  Chargement train
+# ------------------------------------------------------------------
+labels_df  = pd.read_csv(LABELS_CSV)                     # colonnes : ID,target
+label_dict = {f"{row.ID}.npy": row.target for _, row in labels_df.iterrows()}
+
+X_list, y_list = [], []
+for p in glob.glob(os.path.join(TRAIN_DIR, "*.npy")):
+    X_list.append(np.load(p).astype(np.float32))         # (72,48)
+    y_list.append(label_dict[os.path.basename(p)])
+
+X = np.expand_dims(np.stack(X_list), -1)                 # (N,72,48,1)
+y = np.array(y_list)
+classes = np.unique(y)
+
+# ------------------------------------------------------------------
+#AUTO CLASS WEIGHTS
+# ------------------------------------------------------------------
+weights = compute_class_weight(class_weight="balanced",
+                               classes=classes,
+                               y=y)
+class_weight = {cls: w for cls, w in zip(classes, weights)}
+
+print("Effectifs :", {cls: (y == cls).sum() for cls in classes})
+print("class_weight calculés :", class_weight)
+
+y_cat = to_categorical(y, num_classes=3)
+
+# ------------------------------------------------------------------
+# 3.  Train / Val split
+# ------------------------------------------------------------------
+X_tr, X_val, y_tr, y_val = train_test_split(
+    X, y_cat, test_size=0.3, random_state=42, stratify=y)
+
+# ------------------------------------------------------------------
+# 4.  Modèle CNN
+# ------------------------------------------------------------------
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(72, 48, 1)),
+    BatchNormalization(),
+    MaxPool2D((2, 2)), Dropout(0.25),
+
+    Conv2D(64, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPool2D((2, 2)), Dropout(0.30),
+
+    Conv2D(128, (1, 5), activation='relu', padding='same'),   # noyau anisotrope
+    BatchNormalization(),
+    MaxPool2D((2, 2)), Dropout(0.40),
+
+    GlobalAveragePooling2D(),                                 # meilleur que Flatten
+    Dense(256, activation='relu'), Dropout(0.5),
+    Dense(3, activation='softmax')
+])
+
+model.compile(Adam(0.005), loss='categorical_crossentropy', metrics=['accuracy'])
+model.summary()
+
+cb = [
+    callbacks.ReduceLROnPlateau(patience=3, factor=0.3, min_lr=1e-5, verbose=1),
+    callbacks.EarlyStopping(patience=8, restore_best_weights=True, verbose=1)
+]
+
+# ------------------------------------------------------------------
+# 5.  Entraînement
+# ------------------------------------------------------------------
+history = model.fit(
+    X_tr, y_tr,
+    epochs=30,
+    batch_size=256,
+    validation_data=(X_val, y_val),
+    class_weight=class_weight,
+    callbacks=cb,
+    verbose=2
+)
+
+# ------------------------------------------------------------------
+# 6.  Évaluation locale
+# ------------------------------------------------------------------
+val_loss, val_acc = model.evaluate(X_val, y_val, verbose=0)
+print(f"\nValidation accuracy : {val_acc*100:.2f} %")
+
+y_val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
+y_val_true = np.argmax(y_val, axis=1)
+print(classification_report(y_val_true, y_val_pred))
+print("Matrice de confusion :\n", confusion_matrix(y_val_true, y_val_pred))
+
+# ------------------------------------------------------------------
+# 7.  Génération submission.csv
+# ------------------------------------------------------------------
+test_files = sorted(glob.glob(os.path.join(TEST_DIR, "*.npy")),
+                    key=lambda p: int(os.path.splitext(os.path.basename(p))[0]))
+
+Xt = np.expand_dims(np.stack([np.load(p).astype(np.float32) for p in test_files]), -1)  # (N,72,48,1)
+y_test_pred = np.argmax(model.predict(Xt, verbose=0), axis=1)
+
+submission = pd.DataFrame({
+    "ID": [int(os.path.splitext(os.path.basename(p))[0]) for p in test_files],
+    "target": y_test_pred.astype(int)
+})
+OUT_PATH = "/kaggle/working/submission2.csv"
+submission.to_csv(OUT_PATH, index=False)
+print(f"\n✔️  submission.csv enregistré : {OUT_PATH}")
+print(submission.head())
+
+# ------------------------------------------------------------------
+# 8.  Courbe d’apprentissage (optionnel)
+# ------------------------------------------------------------------
+plt.plot(history.history['accuracy'], label='Train')
+plt.plot(history.history['val_accuracy'], label='Val')
+plt.xlabel('Epoch'); plt.ylabel('Accuracy')
+plt.title('Accuracy per Epoch')
+plt.legend(); plt.grid(); plt.show()
